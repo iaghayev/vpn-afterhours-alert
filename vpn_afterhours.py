@@ -191,8 +191,12 @@ def send_vpn_alert(info, trigger_type, sent, state):
     if uniq in sent:
         return False
 
-    title = "🔔 <b>İş vaxtından kənar VPN qoşulması</b>" if trigger_type == "afterhours" \
-            else f"⏳ <b>{LONG_SESSION_HOURS} saatdan çox davam edən VPN sessiyası</b>"
+    if trigger_type in ("afterhours", "afterhours_login"):
+        title = "🔔 <b>İş vaxtından kənar VPN qoşulması</b>"
+    elif trigger_type == "longsession":
+        title = f"⏳ <b>{LONG_SESSION_HOURS} saatdan çox davam edən VPN sessiyası</b>"
+    else:
+        title = "🔔 <b>VPN xəbərdarlığı</b>"
 
     msg = (
         f"{title}\n"
