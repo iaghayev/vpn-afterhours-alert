@@ -228,20 +228,37 @@ def main():
         return
 
     now_local = datetime.now(tz)
+    now_is_after = is_after_hours(now_local)
 
     for e in entries:
         info = format_user(e, tz)
         if not info["login_epoch"]:
             continue
 
+        # Private/daxili gateway bağlantılarını keç
         if info["is_internal_gw_pubip"]:
             continue
 
-        if is_after_hours(now_local):
-            send_vpn_alert(info, "afterhours", sent, state)
+        # Login-in after-hours olub-olmadığını yoxla
+        login_is_after = False
+        if info["login_local"] is not None:
+            login_is_after = is_after_hours(info["login_local"])
 
-        if info["is_external"] and info["total_hours"] >= LONG_SESSION_HOURS:
-            send_vpn_alert(info, "longsession", sent, state)
+        if now_is_after:
+            # AFTER-HOURS REJİMİ:
+            # 1) Yalnız after-hours-da BAŞLAYAN sessiyalar üçün alert
+            if login_is_after:
+                send_vpn_alert(info, "afterhours_login", sent, state)
+
+            # 2) 12+ saat davam edən sessiyalar üçün də alert (login vaxtından asılı deyil)
+            if info["is_external"] and info["total_hours"] >= LONG_SESSION_HOURS:
+                send_vpn_alert(info, "longsession", sent, state)
+
+        else:
+            # İŞ SAATLARI REJİMİ:
+            # Yalnız 12+ saat davam edən sessiyalar üçün alert
+            if info["is_external"] and info["total_hours"] >= LONG_SESSION_HOURS:
+                send_vpn_alert(info, "longsession", sent, state)
 
 if __name__ == "__main__":
     main()
